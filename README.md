@@ -34,7 +34,7 @@ This repository contains the projects I completed during my cybersecurity intern
 To get started with these projects, you can clone this repository and run the scripts using Python. Each project is contained within its own directory with a README file providing detailed instructions on how to use and understand the code.
 
 bash
-git clone https://github.com/karan8102/cybersecurity-internship-projects.git
+git clone https://github.com/karan8102/cybersecurity-internship-projects-at-prodigy.git
 cd cybersecurity-internship-projects
 
 
